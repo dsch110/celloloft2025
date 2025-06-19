@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Etude {
+  id          Int       @id @default(autoincrement())
+  number      Int       // Popper etude number (1-40)
+  title       String
+  description String?
+  videos      Video[]
+  cohortProgress CohortEtudeProgress[]
+}
+
+model Video {
+  id          Int       @id @default(autoincrement())
+  title       String
+  youtubeId   String
+  description String?
+  weekNumber  Int       // 1 or 2 for each etude
+  orderInWeek Int       // Order of video within the week
+  etude       Etude     @relation(fields: [etudeId], references: [id])
+  etudeId     Int
+}
+
+model Cohort {
+  id          Int       @id @default(autoincrement())
+  name        String
+  startDate   DateTime
+  students    Student[]
+  progress    CohortEtudeProgress[]
+}
+
+model Student {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  cohort    Cohort   @relation(fields: [cohortId], references: [id])
+  cohortId  Int
+}
+
+model CohortEtudeProgress {
+  id          Int       @id @default(autoincrement())
+  cohort      Cohort    @relation(fields: [cohortId], references: [id])
+  cohortId    Int
+  etude       Etude     @relation(fields: [etudeId], references: [id])
+  etudeId     Int
+  startWeek   Int       // When this etude becomes available to the cohort
+  isActive    Boolean   @default(false)
+  
+  @@unique([cohortId, etudeId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  enrollments   Enrollment[]
+  stripeCustomerId String?
+}
+
+model Course {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  startDate   DateTime
+  endDate     DateTime
+  enrollments Enrollment[]
+  stripePriceId String
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+  status    String   // "active", "completed", "cancelled"
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+}
