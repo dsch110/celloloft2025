@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { TeacherDiscount } from './teacher-discount';
-import Navigation from '../../components/Navigation';
+import { useCart } from '@/app/cello-sheet-music/CartContext';
 import { loadStripe } from '@stripe/stripe-js';
 
 interface Product {
@@ -100,121 +100,13 @@ function getYouTubeEmbedUrl(url: string): string {
   return url;
 }
 
-// Cart context and provider
-interface CartItem {
-  sku: string;
-  title: string;
-  price: number;
-  quantity: number;
-  stripePriceId: string;
-  type: string;
-}
-interface CartContextType {
-  cart: CartItem[];
-  addToCart: (item: CartItem) => void;
-  removeFromCart: (sku: string) => void;
-  clearCart: () => void;
-  openCart: () => void;
-  closeCart: () => void;
-  isCartOpen: boolean;
-  updateCartQuantity: (sku: string, quantity: number) => void;
-}
-const CartContext = createContext<CartContextType | undefined>(undefined);
-function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error('useCart must be used within CartProvider');
-  return ctx;
-}
-function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const addToCart = (item: CartItem) => {
-    setCart(prev => {
-      const existing = prev.find(i => i.sku === item.sku);
-      if (existing) {
-        return prev.map(i => i.sku === item.sku ? { ...i, quantity: i.quantity + item.quantity } : i);
-      }
-      return [...prev, item];
-    });
-    setIsCartOpen(true);
-  };
-  const removeFromCart = (sku: string) => setCart(prev => prev.filter(i => i.sku !== sku));
-  const clearCart = () => setCart([]);
-  const openCart = () => setIsCartOpen(true);
-  const closeCart = () => setIsCartOpen(false);
-  const updateCartQuantity = (sku: string, quantity: number) => {
-    setCart(prev => prev.map(i => i.sku === sku ? { ...i, quantity } : i));
-  };
-  return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, openCart, closeCart, isCartOpen, updateCartQuantity }}>
-      {children}
-    </CartContext.Provider>
-  );
-}
+
 
 export default function CelloSheetMusicPage() {
-  const [activeType, setActiveType] = useState('all');
-  const [activeLevel, setActiveLevel] = useState('all');
-  const [activeComposer, setActiveComposer] = useState('all');
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
-  const [isTeacherDiscountOpen, setIsTeacherDiscountOpen] = useState(false);
-  const [showComposerVideo, setShowComposerVideo] = useState<string | null>(null);
-  const [activeComposerVideo, setActiveComposerVideo] = useState<number>(0);
-  const [miniPlayerVideoUrl, setMiniPlayerVideoUrl] = useState<string | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-
-  useEffect(() => {
-    fetch('/cello-sheet-music/sheet-music-skus.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data: SheetMusicData) => {
-        console.log('Loaded data:', data);
-        const products = data.data.map(row => {
-          const product: any = {};
-          data.headers.forEach((header, index) => {
-            if (header === 'price') {
-              product[header] = parseFloat(row[index] as string);
-            } else {
-              product[header] = row[index];
-            }
-          });
-          return product as Product;
-        });
-        console.log('Processed products:', products);
-        setProducts(products);
-      })
-      .catch(error => {
-        console.error('Error loading sheet music data:', error);
-      });
-  }, []);
-
-  // Filter products by type, level, and composer
-  const filteredProducts = products.filter(p => {
-    const typeMatch = activeType === 'all' || skuTypeMap[p.sku] === activeType || p.type === activeType;
-    const levelMatch = activeLevel === 'all' || p.level === activeLevel;
-    const composerMatch = activeComposer === 'all' || (p.composer && p.composer.includes(activeComposer));
-    return typeMatch && levelMatch && composerMatch;
-  });
-
-  // Featured products (bestsellers/bundles)
-  const featured = [products.find(p => p.sku === 'CELLO1'), products.find(p => p.sku === 'POPPER40'), products.find(p => p.sku === 'POPPERFRAN')].filter((p): p is Product => p !== undefined);
-
-  // When a composer video is opened, also open the mini player
-  useEffect(() => {
-    if (showComposerVideo && products.find(p => p.composer === showComposerVideo)) {
-      setMiniPlayerVideoUrl(products.find(p => p.composer === showComposerVideo)?.youtube_url || null);
-    }
-  }, [showComposerVideo]);
-
   return (
-    <CartProvider>
-      <NavigationWithCart />
+    <div className="min-h-screen bg-gradient-to-br from-neutral-900 to-neutral-800">
       <CelloSheetMusicPageInner />
-    </CartProvider>
+    </div>
   );
 }
 
@@ -307,8 +199,16 @@ function CelloSheetMusicPageInner() {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-gradient-to-br from-neutral-900 to-neutral-800 text-white pb-24">
+    <div className="text-white">
+      {/* Main content */}
+      <div className="max-w-6xl mx-auto px-4 pt-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-light mb-4">Sheet Music</h1>
+          <p className="text-xl text-neutral-300">
+            Original compositions and arrangements for cello
+          </p>
+        </div>
+
         {/* Hero section */}
         <div className="w-full max-w-4xl mx-auto mt-12 mb-8 px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Cello Loft Sheet Music</h1>
@@ -525,15 +425,6 @@ function CelloSheetMusicPageInner() {
             <Link href="/about" className="text-neutral-300 hover:text-white transition">About</Link>
           </div>
           <div className="flex gap-4 mt-4 md:mt-0 items-center">
-            {/* Cart Icon */}
-            <button onClick={openCart} className="relative text-white hover:text-green-400 transition">
-              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A2 2 0 0 0 7.5 19h9a2 2 0 0 0 1.85-1.3L21 13M7 13V6a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v7" />
-              </svg>
-              {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full text-xs px-2 py-0.5">{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
-              )}
-            </button>
             <a href="https://instagram.com/yourprofile" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white transition"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 3.5zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm6.25.75a1 1 0 1 1-2 0a1 1 0 0 1 2 0z"/></svg></a>
             <a href="https://youtube.com/yourprofile" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white transition"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M21.8 8.001s-.2-1.4-.8-2.001c-.7-.8-1.5-.8-1.9-.9C16.1 5 12 5 12 5h-.1s-4.1 0-7.1.1c-.4.1-1.2.1-1.9.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.6c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.7.8 1.7.8 2.1.9c1.5.1 6.9.1 6.9.1s4.1 0 7.1-.1c.4-.1 1.2-.1 1.9-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.6c0-1.6-.2-3.2-.2-3.2zM9.8 15.2V8.8l6.4 3.2l-6.4 3.2z"/></svg></a>
           </div>
@@ -614,34 +505,6 @@ function CelloSheetMusicPageInner() {
           </div>
         </Dialog>
       )}
-    </>
-  );
-}
-
-// Navigation with cart icon connected to openCart
-function NavigationWithCart() {
-  const { openCart, cart } = useCart();
-  return (
-    <nav className="bg-neutral-900/90 shadow-lg sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-16">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="text-white font-bold text-lg tracking-widest">Cello Loft</Link>
-          <Link href="/cello-course-overview/cellosophy-cello-method" className="text-neutral-300 hover:text-white transition">Courses</Link>
-          <Link href="/cello-sheet-music" className="text-neutral-300 hover:text-white transition">Sheet Music</Link>
-          <Link href="/about" className="text-neutral-300 hover:text-white transition">About</Link>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Cart Icon */}
-          <button onClick={openCart} className="relative text-white hover:text-green-400 transition">
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A2 2 0 0 0 7.5 19h9a2 2 0 0 0 1.85-1.3L21 13M7 13V6a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v7" />
-            </svg>
-            {cart.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full text-xs px-2 py-0.5">{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
-            )}
-          </button>
-        </div>
-      </div>
-    </nav>
+    </div>
   );
 } 

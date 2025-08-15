@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-07-30.basil',
 });
 
 // Hardcoded shipping price (in cents)
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     }));
 
     // Add shipping if any item is physical
-    const hasPhysical = items.some((item: { type: string }) => item.type === 'physical');
+    const hasPhysical = items?.some((item: { type: string }) => item.type === 'physical') || false;
     if (hasPhysical) {
       line_items.push({
         price_data: {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
           unit_amount: SHIPPING_AMOUNT,
         },
         quantity: 1,
-      });
+      } as any);
     }
 
     const session = await stripe.checkout.sessions.create({

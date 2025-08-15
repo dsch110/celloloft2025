@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-07-30.basil',
 });
 
 export async function POST(req: Request) {
@@ -25,11 +25,11 @@ export async function POST(req: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email! },
+      where: { email: session.user?.email! },
     });
 
     const stripeSession = await stripe.checkout.sessions.create({
-      customer: user?.stripeCustomerId,
+      customer_email: session.user?.email,
       payment_method_types: ['card'],
       line_items: [
         {

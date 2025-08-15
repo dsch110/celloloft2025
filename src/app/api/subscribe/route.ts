@@ -1,80 +1,49 @@
+// This is the API route for handling newsletter subscriptions.
+
 import { NextResponse } from 'next/server';
 
-const MAILERLITE_API_KEY = process.env.MAILERLITE_API_KEY!;
-const MAILERLITE_GROUP_ID = process.env.MAILERLITE_GROUP_ID!;
-
-function generateDiscountCode() {
-  return `TEACHER${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-}
+// The API key and Group ID will be stored in environment variables
+const MAILERLITE_API_KEY = process.env.MAILERLITE_API_KEY;
+const MAILERLITE_GROUP_ID = process.env.MAILERLITE_GROUP_ID;
+const MAILERLITE_API_URL = 'https://connect.mailerlite.com/api/subscribers';
 
 export async function POST(request: Request) {
+  if (!MAILERLITE_API_KEY || !MAILERLITE_GROUP_ID) {
+    console.error("MailerLite API Key or Group ID is not configured in .env.local");
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+  }
+
+  const { email } = await request.json();
+
+  if (!email || typeof email !== 'string') {
+    return NextResponse.json({ error: 'Email is required and must be a string.' }, { status: 400 });
+  }
+
+  const data = {
+    email: email,
+    groups: [MAILERLITE_GROUP_ID],
+  };
+
   try {
-    const { email } = await request.json();
-
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
-    }
-
-    // Generate a unique discount code
-    const discountCode = generateDiscountCode();
-
-    // Add subscriber to MailerLite
-    const response = await fetch('https://api.mailerlite.com/api/v2/subscribers', {
+    const response = await fetch(MAILERLITE_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-MailerLite-ApiKey': MAILERLITE_API_KEY,
+        'Authorization': `Bearer ${MAILERLITE_API_KEY}`,
       },
-      body: JSON.stringify({
-        email,
-        fields: {
-          discount_code: discountCode,
-        },
-        groups: [MAILERLITE_GROUP_ID],
-      }),
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to subscribe to MailerLite');
+      const errorData = await response.json();
+      console.error('MailerLite API Error:', errorData);
+      return NextResponse.json({ error: 'Failed to subscribe. Please try again later.' }, { status: 500 });
     }
 
-    // Send welcome email with discount code
-    await fetch('https://api.mailerlite.com/api/v2/campaigns', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-MailerLite-ApiKey': MAILERLITE_API_KEY,
-      },
-      body: JSON.stringify({
-        type: 'regular',
-        subject: 'Welcome to Cello Loft - Your Teacher Discount Code',
-        from: 'Cello Loft <teachers@celloloft.com>',
-        from_name: 'Cello Loft',
-        groups: [MAILERLITE_GROUP_ID],
-        content: {
-          html: `
-            <h1>Welcome to Cello Loft!</h1>
-            <p>Thank you for signing up for our teacher discount program.</p>
-            <p>Your discount code is: <strong>${discountCode}</strong></p>
-            <p>This code gives you 10% off all sheet music purchases.</p>
-            <p>Happy teaching!</p>
-          `,
-        },
-      }),
-    });
+    return NextResponse.json({ success: true, message: 'Thank you for subscribing!' });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Please check your email to get your discount code.',
-    });
   } catch (error) {
-    console.error('Error in subscribe route:', error);
-    return NextResponse.json(
-      { error: 'Failed to process subscription' },
-      { status: 500 }
-    );
+    console.error('Network or other error:', error);
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 } 

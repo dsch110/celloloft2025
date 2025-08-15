@@ -8,6 +8,7 @@ import { FiClock } from 'react-icons/fi'
 import { IoTrophyOutline } from 'react-icons/io5'
 import ProgressCircle from '@/components/ProgressCircle'
 import Image from 'next/image'
+import NewsletterForm from '@/components/NewsletterForm'
 
 interface Piece {
   composer: string
@@ -264,6 +265,7 @@ export default function StudentDashboard() {
             Try playing it pizzicato first to really feel the rhythm in your fingers!"
           </p>
         </motion.div>
+        <NewsletterForm note="Eric - you need to customize the .env.local so the MiailerLite GroupID reflects the correct subscriber sequence." />
       </div>
     </div>
   )

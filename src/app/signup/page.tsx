@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -13,17 +13,33 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get plan from URL parameters
+  const urlPlan = searchParams.get('plan');
+  const isSelfStudy = urlPlan === 'self-study';
+  const isWithTeacher = urlPlan === 'with-teacher';
 
   // Pricing logic
   const hasReferral = referral.trim().toLowerCase() === "guest";
   const isMonthly = plan === "monthly";
   const isYearly = plan === "yearly";
-  const fullPrice = isMonthly ? 99 : 999;
-  const discountPrice = isMonthly ? 39 : 399;
+  
+  // Adjust pricing based on plan type
+  const fullPrice = isWithTeacher ? (isMonthly ? 39 : 399) : (isMonthly ? 99 : 999);
+  const discountPrice = isWithTeacher ? (isMonthly ? 39 : 399) : (isMonthly ? 99 : 999);
   const price = hasReferral ? discountPrice : fullPrice;
   const showFree = hasReferral;
+  
   // Calculate yearly save percent: 1 - (399/(39*12)) = ~0.1487 = 15%
   const yearlySavePercent = 15;
+
+  // Set referral code automatically for teacher-guided plan
+  useEffect(() => {
+    if (isWithTeacher) {
+      setReferral("guest");
+    }
+  }, [isWithTeacher]);
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +57,24 @@ export default function Signup() {
     }
   };
 
+  const getPlanTitle = () => {
+    if (isWithTeacher) return "Cellosophy with Teacher";
+    if (isSelfStudy) return "Cellosophy Self-Study";
+    return "Cellosophy";
+  };
+
+  const getPlanDescription = () => {
+    if (isWithTeacher) return "Personal guidance from a certified teacher";
+    if (isSelfStudy) return "Learn at your own pace";
+    return "Choose your learning path";
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-900 to-neutral-800 text-white">
       <form onSubmit={handleSignup} className="bg-white/10 p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-light mb-6 text-center">Sign Up for Cellosophy</h1>
+        <h1 className="text-2xl font-light mb-2 text-center">Sign Up for {getPlanTitle()}</h1>
+        <p className="text-neutral-300 text-sm text-center mb-6">{getPlanDescription()}</p>
+        
         <div className="mb-4 flex flex-col items-center gap-1">
           <div className="flex gap-2">
             <button type="button" className={`px-4 py-2 rounded ${isMonthly ? 'bg-blue-500 text-white' : 'bg-neutral-700 text-neutral-300'}`} onClick={() => setPlan('monthly')}>Monthly</button>
@@ -53,10 +83,10 @@ export default function Signup() {
                 Yearly
                 <span className="ml-2 bg-green-500/20 text-green-400 text-xs font-semibold px-2 py-0.5 rounded">Save {yearlySavePercent}%</span>
               </button>
-            
             </div>
           </div>
         </div>
+        
         <input
           type="text"
           placeholder="Name"
@@ -81,10 +111,17 @@ export default function Signup() {
         <input
           type="text"
           placeholder="Referral Code (ask your teacher!)"
-          className="w-full mb-4 p-2 rounded bg-neutral-800 text-white border border-blue-400"
+          className={`w-full mb-4 p-2 rounded bg-neutral-800 text-white border ${isWithTeacher ? 'border-green-400' : 'border-blue-400'}`}
           value={referral}
           onChange={e => setReferral(e.target.value)}
+          disabled={isWithTeacher}
         />
+        {isWithTeacher && (
+          <p className="text-green-400 text-xs mb-4 text-center">
+            ✓ Teacher referral code automatically applied
+          </p>
+        )}
+        
         <div className="mb-4 text-center">
           {hasReferral ? (
             <>
@@ -101,6 +138,7 @@ export default function Signup() {
             <div className="text-3xl font-bold mb-1">${fullPrice}<span className="text-lg text-neutral-400 font-normal ml-2">{isMonthly ? '/mo' : ' one-time'}</span></div>
           )}
         </div>
+        
         <input
           type="text"
           placeholder="Card Number (4242 4242 4242 4242)"
@@ -113,7 +151,9 @@ export default function Signup() {
         </div>
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
         {success && <p className="text-green-400 text-sm mb-4">{success}</p>}
-        <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded transition mb-2">Sign Up</button>
+        <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded transition mb-2">
+          {isWithTeacher ? 'Start with Teacher' : 'Start Learning'}
+        </button>
         <p className="text-center text-neutral-400 text-sm">
           Already have an account? <a href="/login" className="text-blue-400 underline">Login</a>
         </p>
