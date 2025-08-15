@@ -120,7 +120,7 @@ export default function Etude11() {
     const newWatchedVideos = new Set(watchedVideos);
     newWatchedVideos.add(videoId);
     setWatchedVideos(newWatchedVideos);
-    localStorage.setItem('watchedVideos-etude11', JSON.stringify([...newWatchedVideos]));
+    localStorage.setItem('watchedVideos-etude11', JSON.stringify(Array.from(newWatchedVideos)));
 
     const video = videos.find(v => v.id === videoId);
     if (video && !video.isPracticeTrack) {

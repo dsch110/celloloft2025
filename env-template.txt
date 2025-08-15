@@ -1,0 +1,23 @@
+# Copy this to .env.local and fill in your values
+
+# Database
+DATABASE_URL="your_postgresql_database_url"
+
+# Stripe
+STRIPE_SECRET_KEY="sk_test_your_stripe_secret_key" 
+STRIPE_WEBHOOK_SECRET="whsec_your_webhook_secret"
+
+# Clerk Authentication (Get these from clerk.com dashboard)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_your_clerk_publishable_key"
+CLERK_SECRET_KEY="sk_test_your_clerk_secret_key"
+NEXT_PUBLIC_CLERK_SIGN_IN_URL="/login"
+NEXT_PUBLIC_CLERK_SIGN_UP_URL="/signup"
+NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL="/cellosophy-student-dashboard"
+NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL="/cellosophy-student-dashboard"
+
+# Site URL
+NEXT_PUBLIC_URL="http://localhost:3000"
+
+# MailerLite
+MAILERLITE_API_KEY="your_mailerlite_api_key"
+MAILERLITE_GROUP_ID="your_mailerlite_group_id"

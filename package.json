@@ -18,7 +18,6 @@
     "@tailwindcss/typography": "^0.5.16",
     "framer-motion": "^12.4.2",
     "next": "^15.4.6",
-    "next-auth": "^4.24.11",
     "react": "^19.1.1",
     "react-circular-progressbar": "^2.1.0",
     "react-dom": "^19.1.1",

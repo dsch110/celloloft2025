@@ -4,11 +4,13 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useCart } from '@/app/cello-sheet-music/CartContext';
+import { UserButton, useAuth } from '@clerk/nextjs';
 
 export default function Navigation() {
   const router = useRouter();
   const pathname = usePathname();
   const { cart, openCart } = useCart();
+  const { isSignedIn } = useAuth();
 
   return (
     <motion.nav 
@@ -69,12 +71,33 @@ export default function Navigation() {
                   )}
                 </button>
               )}
-              <button
-                onClick={() => router.push('/login')}
-                className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-4 py-2 rounded-lg transition-colors"
-              >
-                Log In
-              </button>
+              {isSignedIn ? (
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "h-8 w-8",
+                      userButtonPopoverCard: "bg-neutral-800 border border-neutral-700",
+                      userButtonPopoverText: "text-white",
+                      userButtonPopoverActionButton: "text-neutral-300 hover:text-white hover:bg-neutral-700",
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="text-neutral-400 hover:text-white px-4 py-2 transition-colors"
+                  >
+                    Log In
+                  </button>
+                  <button
+                    onClick={() => router.push('/signup')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

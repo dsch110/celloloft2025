@@ -240,7 +240,7 @@ export default function CelloCoursesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredCourses.map((course, index) => {
             const isStudentCourse = course.id === 'cellosophy-student' && course.variants;
-            const selectedVariant = isStudentCourse ? course.variants.find(v => v.id === studentPlan) : null;
+            const selectedVariant = isStudentCourse ? course.variants?.find(v => v.id === studentPlan) : null;
 
             const displayPrice = (isStudentCourse && selectedVariant ? selectedVariant.price : course.price) || '';
             const ctaLink = isStudentCourse && selectedVariant ? selectedVariant.ctaLink : course.ctaLink;

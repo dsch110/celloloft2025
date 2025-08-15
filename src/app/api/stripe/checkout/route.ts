@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getServerSession } from 'next-auth/next';
+import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -9,8 +9,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession();
-    if (!session) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -24,12 +24,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
+    // Get user from Clerk
+    const { clerkClient } = await import('@clerk/nextjs/server');
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(userId);
+    const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+
+    if (!userEmail) {
+      return NextResponse.json({ error: 'User email not found' }, { status: 400 });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: session.user?.email! },
+      where: { email: userEmail },
     });
 
     const stripeSession = await stripe.checkout.sessions.create({
-      customer_email: session.user?.email,
+      customer_email: userEmail,
       payment_method_types: ['card'],
       line_items: [
         {
@@ -38,11 +48,11 @@ export async function POST(req: Request) {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXTAUTH_URL}/courses/${courseId}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/courses/${courseId}`,
+      success_url: `${process.env.NEXT_PUBLIC_URL}/courses/${courseId}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL}/courses/${courseId}`,
       metadata: {
         courseId,
-        userId: user?.id,
+        userId: user?.id || userId,
       },
     });
 

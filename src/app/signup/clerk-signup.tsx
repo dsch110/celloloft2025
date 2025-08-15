@@ -1,14 +1,32 @@
-import { SignIn } from '@clerk/nextjs'
+'use client'
 
-export default function Login() {
+import { SignUp } from '@clerk/nextjs'
+import { useSearchParams } from 'next/navigation'
+
+export default function ClerkSignup() {
+  const searchParams = useSearchParams()
+  const plan = searchParams.get('plan')
+  
+  const getPlanTitle = () => {
+    if (plan === 'with-teacher') return "Cellosophy with Teacher"
+    if (plan === 'self-study') return "Cellosophy Self-Study"
+    return "Cellosophy"
+  }
+
+  const getPlanDescription = () => {
+    if (plan === 'with-teacher') return "Personal guidance from a certified teacher"
+    if (plan === 'self-study') return "Learn at your own pace"
+    return "Choose your learning path"
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-900 to-neutral-800 text-white">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-light text-white mb-2">Welcome Back</h1>
-          <p className="text-neutral-300">Sign in to access your courses and progress</p>
+          <h1 className="text-3xl font-light text-white mb-2">Sign Up for {getPlanTitle()}</h1>
+          <p className="text-neutral-300">{getPlanDescription()}</p>
         </div>
-        <SignIn 
+        <SignUp 
           appearance={{
             elements: {
               rootBox: "mx-auto",
@@ -21,9 +39,9 @@ export default function Login() {
               footerActionLink: "text-blue-400 hover:text-blue-300",
             }
           }}
-          redirectUrl="/cellosophy-student-dashboard"
+          redirectUrl={`/signup/payment?plan=${plan || 'self-study'}`}
         />
       </div>
     </div>
   )
-} 
+}
